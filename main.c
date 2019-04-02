@@ -14,7 +14,6 @@ int main(int argc, char const *argv[]) {
 	int op = 0;
 	char str1[2048];
 	char str2[2048];
-	char str3[2048];
 	do {
 		printf(
 			" 0: exit\n"

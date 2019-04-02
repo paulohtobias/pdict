@@ -56,25 +56,6 @@ typedef struct pdict_item_t {
 /// Opaque dict struct.
 typedef struct pdict_t pdict_t;
 
-typedef struct pdict_t {
-	pdict_item_t *items;
-
-	/// Current number of items.
-	int32_t len;
-
-	// Maximum capacity.
-	int32_t max_len;
-
-	/// If a non-existing key will be added
-	/// when setting a value. Default is true.
-	bool add_missing_keys;
-
-	/// If `items` will stretch i.e. realloc
-	/// when `len` reaches `max_len`.
-	/// Not supported yet.
-	bool stretch;
-} pdict_t;
-
 /**
  * Returns a string describing the last error.
  */
@@ -129,13 +110,24 @@ pdict_item_t *pdict_get_item(const pdict_t *dict, const char *key);
  * is `false`, then no value is added.
  *
  */
-int pdict_set_value_all(pdict_t *dict, const char *key, void *value, bool add_missing_keys, void (*free_value)(void *));
+int pdict_set_value_all(pdict_t *dict, const char *key, void *value, void (*free_value)(void *));
 
 /**
  * Wrapper to `pdict_set_value_all` using `__pdict_free` as
  * the default `free_value` function.
  */
-#define pdict_set_value(dict, key, value) pdict_set_value_all(dict, key, value, (dict)->add_missing_keys, __pdict_free)
+#define pdict_set_value(dict, key, value) pdict_set_value_all(dict, key, value, __pdict_free)
+
+/**
+ * Same as `pdict_set_value_all` but alwalys create missing keys.
+ */
+int pdict_add_value_all(pdict_t *dict, const char *key, void *value, void (*free_value)(void *));
+
+/**
+ * Wrapper to `pdict_add_value_all` using `__pdict_free` as
+ * the default `free_value` function.
+ */
+#define pdict_add_value(dict, key, value) pdict_add_value_all(dict, key, value, __pdict_free)
 
 /**
  * Return a list with all the keys from `dict`. All
