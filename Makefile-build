@@ -1,0 +1,87 @@
+# Main Makefile
+CC := gcc
+CFLAGS := -Wall -MMD
+
+# Check for debug/release build
+DEBUG ?= 1
+BUILD_DLL ?= 0
+ifeq ($(DEBUG), 1)
+    CFLAGS += -g -DDEBUG
+	TARGET := debug
+else
+	CFLAGS += -O3
+ifeq ($(BUILD_DLL), 1)
+	TARGET := dll
+else
+	TARGET := release
+endif
+endif
+
+# Library name for dll
+LIB_NAME := pdict
+
+# OS-dependent extensions
+ifeq ($(OS),Windows_NT)
+	BIN := main-$(TARGET).exe
+	DLE := dll
+#	LOADLIBES := -municode
+else
+	BIN := main-$(TARGET).out
+	DLE := so
+endif
+
+# Directories
+IDIR := include
+SDIR := src
+
+# OS-dependent directories
+ifeq ($(OS),Windows_NT)
+	ODIR := obj/windows
+else
+	ODIR := obj/linux
+endif
+
+# Include Paths
+INCLUDE_PATHS := -I$(IDIR)
+
+# Libraries
+LIBS :=
+#CFLAGS += `pkg-config --cflags $(LIBS)`
+#LOADLIBES += `pkg-config --libs $(LIBS)`
+
+#Compilation line
+COMPILE := $(CC) $(CFLAGS) $(INCLUDE_PATHS)
+
+#FILEs
+#---------------Source----------------#
+SRCS := $(wildcard $(SDIR)/*.c)
+
+#---------------Object----------------#
+OBJS := $(SRCS:$(SDIR)/%.c=$(ODIR)/$(TARGET)/%.o)
+#-------------Dependency--------------#
+DEPS := $(OBJS:%.o=%.d)
+
+
+all: $(OBJS) $(BIN)
+.PHONY : all release debug dll run clean
+
+$(BIN): $(OBJS) main.c
+	$(COMPILE) $(OBJS) main.c -o $(BIN) $(LOADLIBES)
+
+
+dll: LOADLIBES += -lm -fPIC
+dll: $(OBJS)
+	$(COMPILE) -shared -o lib$(LIB_NAME).$(DLE) $(OBJS) $(LOADLIBES)
+
+# Include all .d files
+-include $(DEPS)
+
+$(ODIR)/$(TARGET)/%.o: $(SDIR)/%.c
+	@mkdir -p $(ODIR)/$(TARGET)
+	$(COMPILE) -c $< -o $@ $(LOADLIBES)
+
+run: $(BIN)
+	./$(BIN)
+
+clean:
+	-rm -rf $(ODIR)/ *.d $(BIN) lib$(LIB_NAME).$(DLE)
