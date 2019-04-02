@@ -49,6 +49,11 @@ LIBS :=
 #CFLAGS += `pkg-config --cflags $(LIBS)`
 #LOADLIBES += `pkg-config --libs $(LIBS)`
 
+# Install
+INSTALL_PREFFIX = /usr
+INSTALL_INCLUDE_PATH = $(INSTALL_PREFFIX)/include
+INSTALL_LIB_PATH = $(INSTALL_PREFFIX)/lib
+
 #Compilation line
 COMPILE := $(CC) $(CFLAGS) $(INCLUDE_PATHS)
 
@@ -63,7 +68,7 @@ DEPS := $(OBJS:%.o=%.d)
 
 
 all: $(OBJS) $(BIN)
-.PHONY : all release debug dll run clean
+.PHONY : all release debug dll install run clean
 
 $(BIN): $(OBJS) main.c
 	$(COMPILE) $(OBJS) main.c -o $(BIN) $(LOADLIBES)
@@ -72,6 +77,12 @@ $(BIN): $(OBJS) main.c
 dll: LOADLIBES += -lm -fPIC
 dll: $(OBJS)
 	$(COMPILE) -shared -o lib$(LIB_NAME).$(DLE) $(OBJS) $(LOADLIBES)
+
+
+install: dll
+	@mkdir -p $(INSTALL_INCLUDE_PATH)
+	cp -r $(IDIR)/* $(INSTALL_INCLUDE_PATH)/
+	cp lib$(LIB_NAME).$(DLE) $(INSTALL_LIB_PATH)/
 
 # Include all .d files
 -include $(DEPS)

@@ -5,7 +5,7 @@ TARGET:=DEBUG=1
 all:
 	$(MAKE) -f Makefile-build $(TARGET)
 
-.PHONY : all release debug dll run clean
+.PHONY : all release debug dll install run clean
 
 # Build for release
 release: TARGET:=DEBUG=0
@@ -18,6 +18,10 @@ debug: all
 # Build dynamic library
 dll: TARGET:=DEBUG=0 BUILD_DLL=1 dll
 dll: all
+
+# Install dynamic library in the system.
+install: TARGET:=DEBUG=0 BUILD_DLL=1 install
+install: all
 
 # Run the application
 run: TARGET:=run
