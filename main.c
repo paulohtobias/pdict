@@ -9,7 +9,21 @@
 	setbuf(stdin, NULL);
 
 int main(int argc, char const *argv[]) {
-	pdict_t *dict = pdict_create();
+	int32_t max_len = __PDICT_DEFAULT_MAX_LEN__;
+	bool add_missing = true;
+	int32_t stretch = 0;
+	if (argc > 1) {
+		max_len = atoi(argv[1]);
+
+		if (argc > 2) {
+			add_missing = atoi(argv[2]);
+
+			if (argc > 3) {
+				stretch = atoi(argv[3]);
+			}
+		}
+	}
+	pdict_t *dict = pdict_create_all(max_len, add_missing, stretch);
 
 	int op = 0;
 	char str1[2048];

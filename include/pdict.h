@@ -28,6 +28,11 @@
 #define __PDICT_DEFAULT_MAX_LEN__ 100 // Arbitrary value.
 #endif // __PDICT_DEFAULT_MAX_LEN__
 
+/// Default stretch increase length.
+#ifndef __PDICT_DEFAULT_STRETCH__
+#define __PDICT_DEFAULT_STRETCH__ 0
+#endif // __PDICT_DEFAULT_STRETCH__
+
 /// MurmurHash3's seed.
 #ifndef __PDICT_HASH_SEED__
 #define __PDICT_HASH_SEED__ 22 // Arbitrary value.
@@ -80,7 +85,7 @@ const char *pdict_get_error_message(int pdict_errno);
 /**
  *
  */
-pdict_t *pdict_create_all(int32_t max_len, bool add_missing_keys, bool stretch);
+pdict_t *pdict_create_all(int32_t max_len, bool add_missing_keys, int32_t stretch);
 
 /**
  *

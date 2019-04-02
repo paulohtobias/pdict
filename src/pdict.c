@@ -27,13 +27,14 @@ typedef struct pdict_t {
 	int32_t max_len;
 
 	/// If a non-existing key will be added
-	/// when setting a value. Default is true.
+	/// when setting a value.
+	/// Default: `true`.
 	bool add_missing_keys;
 
-	/// If `items` will stretch i.e. realloc
-	/// when `len` reaches `max_len`.
-	/// Not supported yet.
-	bool stretch;
+	/// If > 0, `items` will stretch, i.e.,
+	/// realloc'd when `len` reaches `max_len`.
+	/// Default: `__PDICT_DEFAULT_STRETCH__`.
+	int32_t stretch;
 } pdict_t;
 
 _Thread_local int __pdict_errno = PDICT_OK;
@@ -51,7 +52,7 @@ const char *pdict_get_error_message(int pdict_errno) {
 	return __pdict_error_messages[pdict_errno];
 }
 
-pdict_t *pdict_create_all(int32_t max_len, bool add_missing_keys, bool stretch) {
+pdict_t *pdict_create_all(int32_t max_len, bool add_missing_keys, int32_t stretch) {
 	pdict_t *dict = pdict_malloc(sizeof(pdict_t));
 
 	dict->max_len = max_len;
@@ -64,7 +65,7 @@ pdict_t *pdict_create_all(int32_t max_len, bool add_missing_keys, bool stretch) 
 }
 
 pdict_t *pdict_create() {
-	return pdict_create_all(__PDICT_DEFAULT_MAX_LEN__, true, false);
+	return pdict_create_all(__PDICT_DEFAULT_MAX_LEN__, true, __PDICT_DEFAULT_STRETCH__);
 }
 
 void pdict_destroy(pdict_t *dict) {
@@ -88,7 +89,7 @@ static inline int32_t __pdict_hash_abs(int32_t hash) {
 	return hash > 0 ? hash : -hash;
 }
 
-static int32_t __pdict_get_index(const pdict_t *dict, const char *key, bool find_empty) {
+static int32_t __pdict_get_items_index(const pdict_item_t *items, int32_t max_len, const char *key, bool find_empty) {
 	__pdict_errno = PDICT_OK;
 
 	int32_t i;
@@ -101,25 +102,25 @@ static int32_t __pdict_get_index(const pdict_t *dict, const char *key, bool find
 
 	// MurmurHash3_x64_128 will give four 32-bit values. try them first.
 	for (i = 0; i < 4; i++) {
-		index = __pdict_hash_abs(hash[i] % dict->max_len);
+		index = __pdict_hash_abs(hash[i] % max_len);
 
 		start += index;
 
-		if ((dict->items[index].key != NULL && !find_empty && strcmp(dict->items[index].key, key) == 0) ||
-			(dict->items[index].key == NULL && find_empty))
+		if ((items[index].key != NULL && !find_empty && strcmp(items[index].key, key) == 0) ||
+			(items[index].key == NULL && find_empty))
 		{
 			return index;
 		}
 	}
 
-	start = __pdict_hash_abs(start % dict->max_len);
+	start = __pdict_hash_abs(start % max_len);
 
 	// If even after trying all four we can't get a match, we start a naive linear search.
-	for (i = 0; i < dict->max_len; i++) {
-		index = __pdict_hash_abs((i + start) % dict->max_len);
+	for (i = 0; i < max_len; i++) {
+		index = __pdict_hash_abs((i + start) % max_len);
 
-		if ((dict->items[index].key != NULL && !find_empty && strcmp(dict->items[index].key, key) == 0) ||
-			(dict->items[index].key == NULL && find_empty))
+		if ((items[index].key != NULL && !find_empty && strcmp(items[index].key, key) == 0) ||
+			(items[index].key == NULL && find_empty))
 		{
 			return index;
 		}
@@ -132,6 +133,36 @@ static int32_t __pdict_get_index(const pdict_t *dict, const char *key, bool find
 	}
 
 	return -1;
+}
+
+static inline int32_t __pdict_get_index(const pdict_t *dict, const char *key, bool find_empty) {
+	return __pdict_get_items_index(dict->items, dict->max_len, key, find_empty);
+}
+
+static void __pdict_stretch(pdict_t *dict) {
+	if (dict->stretch < 1) {
+		return;
+	}
+
+	int32_t max_len = dict->max_len + dict->stretch;
+	pdict_item_t *items = pdict_calloc(max_len, sizeof(pdict_item_t));
+
+	int32_t i, j;
+	for (i = 0, j = 0; j < dict->len && i < dict->max_len; i++) {
+		if (dict->items[i].key != NULL) { // Should be always true.
+
+			// new index should always be greater than 0.
+			int32_t index = __pdict_get_items_index(items, max_len, dict->items[i].key, true);
+
+			items[index] = dict->items[i];
+
+			j++;
+		}
+	}
+
+	pdict_free(dict->items);
+	dict->items = items;
+	dict->max_len = max_len;
 }
 
 const void *pdict_get_value_default(const pdict_t *dict, const char *key, const void *default_value) {
@@ -155,8 +186,15 @@ static int __pdict_set_value(pdict_t *dict, const char *key, void *value, bool a
 	if (item == NULL) {
 		if (add_missing_keys) {
 			int32_t index = __pdict_get_index(dict, key, true);
+
+			// Couldn't find an empty position to add the key.
 			if (index < 0) {
-				return 1;
+				if (dict->stretch <= 0) {
+					return 1;
+				}
+
+				__pdict_stretch(dict);
+				index = __pdict_get_index(dict, key, true);
 			}
 
 			__pdict_errno = PDICT_OK;
@@ -167,6 +205,8 @@ static int __pdict_set_value(pdict_t *dict, const char *key, void *value, bool a
 		} else {
 			return 1;
 		}
+	} else if (item->free_value != NULL) {
+		item->free_value(item->value);
 	}
 
 	item->value = value;
