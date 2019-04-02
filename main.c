@@ -9,7 +9,7 @@
 	setbuf(stdin, NULL);
 
 int main(int argc, char const *argv[]) {
-	pdict_t *dict = pdict_new();
+	pdict_t *dict = pdict_create();
 
 	int op = 0;
 	char str1[2048];
@@ -68,6 +68,6 @@ int main(int argc, char const *argv[]) {
 		}
 	} while(op != 0);
 
-	pdict_free(dict);
+	pdict_destroy(dict);
 	return 0;
 }

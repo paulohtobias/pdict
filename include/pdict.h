@@ -17,10 +17,10 @@
 /// Memory allocators.
 #ifndef __PDICT_ALLOC__
 #define __PDICT_ALLOC__
-#define __pdict_malloc malloc
-#define __pdict_calloc calloc
-#define __pdict_realloc realloc
-#define __pdict_free free
+#define pdict_malloc malloc
+#define pdict_calloc calloc
+#define pdict_realloc realloc
+#define pdict_free free
 #endif // __PDICT_ALLOC__
 
 /// Default maximum capacity.
@@ -42,16 +42,27 @@ enum {
 extern _Thread_local int __pdict_errno;
 
 /**
+ * Describes a dict item.
  *
+ * `key`: unique string identifier for `value`.
+ *
+ * `value`: pointer to some value that will be stored.
+ *
+ * `free_value`: function to call on `value` to release its memory.
+ *               Can be NULL.
+ *
+ * `order`: increases for every new key added. Can be used
+ *          to get a keys list sorted by insertion order.
  */
-typedef struct pdict_item_t {
+typedef struct pdict_item_t pdict_item_t;
+struct pdict_item_t {
 	char *key;
 	void *value;
 
 	void (*free_value)(void *);
 
 	int32_t order;
-} pdict_item_t;
+};
 
 /// Opaque dict struct.
 typedef struct pdict_t pdict_t;
@@ -69,17 +80,17 @@ const char *pdict_get_error_message(int pdict_errno);
 /**
  *
  */
-pdict_t *pdict_new_all(int32_t max_len, bool add_missing_keys, bool stretch);
+pdict_t *pdict_create_all(int32_t max_len, bool add_missing_keys, bool stretch);
 
 /**
  *
  */
-pdict_t *pdict_new();
+pdict_t *pdict_create();
 
 /**
  * Release `dict` from memory.
  */
-void pdict_free(pdict_t *dict);
+void pdict_destroy(pdict_t *dict);
 
 /**
  * Checks if `key` exists in `dict`.
@@ -113,10 +124,10 @@ pdict_item_t *pdict_get_item(const pdict_t *dict, const char *key);
 int pdict_set_value_all(pdict_t *dict, const char *key, void *value, void (*free_value)(void *));
 
 /**
- * Wrapper to `pdict_set_value_all` using `__pdict_free` as
+ * Wrapper to `pdict_set_value_all` using `pdict_free` as
  * the default `free_value` function.
  */
-#define pdict_set_value(dict, key, value) pdict_set_value_all(dict, key, value, __pdict_free)
+#define pdict_set_value(dict, key, value) pdict_set_value_all(dict, key, value, pdict_free)
 
 /**
  * Same as `pdict_set_value_all` but alwalys create missing keys.
@@ -124,14 +135,14 @@ int pdict_set_value_all(pdict_t *dict, const char *key, void *value, void (*free
 int pdict_add_value_all(pdict_t *dict, const char *key, void *value, void (*free_value)(void *));
 
 /**
- * Wrapper to `pdict_add_value_all` using `__pdict_free` as
+ * Wrapper to `pdict_add_value_all` using `pdict_free` as
  * the default `free_value` function.
  */
-#define pdict_add_value(dict, key, value) pdict_add_value_all(dict, key, value, __pdict_free)
+#define pdict_add_value(dict, key, value) pdict_add_value_all(dict, key, value, pdict_free)
 
 /**
  * Return a list with all the keys from `dict`. All
- * strings will be allocated using `__pdict_malloc`.
+ * strings will be allocated using `pdict_malloc`.
  *
  * If `sort` is `true`, then keys will be sorted using its `item`
  * `order` attribute, i.e., the insertion order.

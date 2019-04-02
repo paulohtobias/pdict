@@ -13,7 +13,7 @@
 
 #define __PDICT_STRDUP(dest, src) \
 	{                                           \
-		dest = __pdict_malloc(strlen(src) + 1); \
+		dest = pdict_malloc(strlen(src) + 1); \
 		strcpy(dest, src);                      \
 	}
 
@@ -51,11 +51,11 @@ const char *pdict_get_error_message(int pdict_errno) {
 	return __pdict_error_messages[pdict_errno];
 }
 
-pdict_t *pdict_new_all(int32_t max_len, bool add_missing_keys, bool stretch) {
-	pdict_t *dict = __pdict_malloc(sizeof(pdict_t));
+pdict_t *pdict_create_all(int32_t max_len, bool add_missing_keys, bool stretch) {
+	pdict_t *dict = pdict_malloc(sizeof(pdict_t));
 
 	dict->max_len = max_len;
-	dict->items = __pdict_calloc(dict->max_len, sizeof(pdict_item_t));
+	dict->items = pdict_calloc(dict->max_len, sizeof(pdict_item_t));
 	dict->len = 0;
 	dict->add_missing_keys = add_missing_keys;
 	dict->stretch = stretch;
@@ -63,15 +63,15 @@ pdict_t *pdict_new_all(int32_t max_len, bool add_missing_keys, bool stretch) {
 	return dict;
 }
 
-pdict_t *pdict_new() {
-	return pdict_new_all(__PDICT_DEFAULT_MAX_LEN__, true, false);
+pdict_t *pdict_create() {
+	return pdict_create_all(__PDICT_DEFAULT_MAX_LEN__, true, false);
 }
 
-void pdict_free(pdict_t *dict) {
+void pdict_destroy(pdict_t *dict) {
 	int32_t i, j;
 	for(i = 0, j = 0; j < dict->len && i < dict->max_len; i++) {
 		if (dict->items[i].key != NULL) {
-			__pdict_free(dict->items[i].key);
+			pdict_free(dict->items[i].key);
 			if (dict->items[i].value != NULL) {
 				dict->items[i].free_value(dict->items[i].value);
 			}
@@ -80,8 +80,8 @@ void pdict_free(pdict_t *dict) {
 		}
 	}
 
-	__pdict_free(dict->items);
-	__pdict_free(dict);
+	pdict_free(dict->items);
+	pdict_free(dict);
 }
 
 static inline int32_t __pdict_hash_abs(int32_t hash) {
@@ -184,7 +184,7 @@ int pdict_add_value_all(pdict_t *dict, const char *key, void *value, void (*free
 }
 
 char **pdict_get_keys(const pdict_t *dict, int32_t *keys_len, bool sort) {
-	char **keys = __pdict_malloc(dict->len * sizeof(char *));
+	char **keys = pdict_malloc(dict->len * sizeof(char *));
 	int32_t i, j, k;
 
 	for (i = 0, j = 0; j < dict->len && i < dict->max_len; i++) {
