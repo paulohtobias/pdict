@@ -59,26 +59,20 @@ enum {
 };
 extern _Thread_local int __pdict_errno;
 
-/**
- * Describes a dict item.
- *
- * `key`: unique string identifier for `value`.
- *
- * `value`: pointer to some value that will be stored.
- *
- * `free_value`: function to call on `value` to release its memory.
- *               Can be NULL.
- *
- * `order`: increases for every new key added. Can be used
- *          to get a keys list sorted by insertion order.
- */
+/// Describes a dict item.
 typedef struct pdict_item_t pdict_item_t;
 struct pdict_item_t {
+	/// Unique string identifier for `value`.
 	char *key;
+	/// Pointer to some value that will be stored.
 	void *value;
 
+	/// Function to call on `value` to release its memory.
+ 	/// Can be NULL.
 	void (*free_value)(void *);
 
+	/// Increases for every new key added. Can be used
+	/// to get a keys list sorted by insertion order.
 	int32_t order;
 };
 
@@ -132,7 +126,7 @@ const void *pdict_get_value_default(const pdict_t *dict, const char *key, const 
 pdict_item_t *pdict_get_item(const pdict_t *dict, const char *key);
 
 /**
- * Set's the value associated with `key`.
+ * Sets the value associated with `key`.
  *
  * If the key doesn't exist and `add_missing_keys` is `true`,
  * the key will be automatically created. If `add_missing_keys`
@@ -157,6 +151,11 @@ int pdict_add_value_all(pdict_t *dict, const char *key, void *value, void (*free
  * the default `free_value` function.
  */
 #define pdict_add_value(dict, key, value) pdict_add_value_all(dict, key, value, pdict_free)
+
+/**
+ * Returns the number of keys in `dict`.
+ */
+int32_t pdict_get_key_count(const pdict_t *dict);
 
 /**
  * Return a list with all the keys from `dict`. All

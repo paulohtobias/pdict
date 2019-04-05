@@ -236,6 +236,10 @@ int pdict_add_value_all(pdict_t *dict, const char *key, void *value, void (*free
 	return __pdict_set_value(dict, key, value, true, free_value);
 }
 
+int32_t pdict_get_key_count(const pdict_t *dict) {
+	return dict->len;
+}
+
 char **pdict_get_keys(const pdict_t *dict, int32_t *keys_len, bool sort) {
 	char **keys = pdict_malloc(dict->len * sizeof(char *));
 	int32_t i, j, k;
