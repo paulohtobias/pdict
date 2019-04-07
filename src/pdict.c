@@ -190,7 +190,7 @@ pdict_item_t *pdict_get_item(const pdict_t *dict, const char *key) {
 
 	int32_t index = __pdict_get_index(dict, key, false);
 
-	return index > 0 ? &dict->items[index] : NULL;
+	return index >= 0 ? &dict->items[index] : NULL;
 }
 
 static int __pdict_set_value(pdict_t *dict, const char *key, void *value, bool add_missing_keys, void (*free_value)(void *)) {
